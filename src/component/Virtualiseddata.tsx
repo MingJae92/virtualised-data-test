@@ -1,23 +1,30 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import ProductTypes from "../types/virtualisedlist.types";
+import {
+  PageWrapper,
+  SectionTitle,
+  StyledCard,
+  FilterButton,
+} from "../styles/Virtualiseddata.styles.ts";
+import { Typography } from "@mui/material";
 
 function Virtualiseddata() {
   const [products, setProducts] = useState<ProductTypes[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<ProductTypes[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<boolean>(false);
+  const [toggle, setToggle] = useState<boolean>(false); // false: < $100, true: >= $100
 
   useEffect(() => {
     const productFetch = async () => {
       try {
-        const dataResponse = await axios.get(
-          "https://fakestoreapi.com/products"
-        );
-        console.log(dataResponse.data);
+        const dataResponse = await axios.get("https://fakestoreapi.com/products");
         setProducts(dataResponse.data);
+        setFilteredProducts(dataResponse.data); // Show all products on load
       } catch (error) {
         setError(true);
-        console.log(error);
+        console.error(error);
       } finally {
         setLoading(false);
       }
@@ -26,24 +33,43 @@ function Virtualiseddata() {
     productFetch();
   }, []);
 
-  if (loading) {
-    return <div>Loading...</div>;
-  }
+  const priceToggle = () => {
+    const filtered = toggle
+      ? products.filter((item) => item.price < 100)
+      : products.filter((item) => item.price >= 100);
 
-  if (error) {
-    return <div>Error loading server data</div>;
-  }
+    setFilteredProducts(filtered);
+    setToggle(!toggle);
+  };
+
+  const handleResetProducts = () => {
+    setFilteredProducts(products);
+    setToggle(false);
+  };
+
+  if (loading) return <PageWrapper>Loading...</PageWrapper>;
+  if (error) return <PageWrapper>Error loading server data</PageWrapper>;
 
   return (
-    <div>
-      <h1>Virtualised Data</h1>
-      <div>
-        <h2>Product List:</h2>
-        {products.map((item) => (
-          <div key={item.id}>{item.description}</div>
-        ))}
-      </div>
-    </div>
+    <PageWrapper>
+      <SectionTitle variant="h4">Virtualised Data</SectionTitle>
+
+      <FilterButton variant="contained" onClick={priceToggle}>
+        {toggle ? "Show Products less than $100" : "Show Products more than $100"}
+      </FilterButton>
+
+      <FilterButton variant="outlined" onClick={handleResetProducts}>
+        Reset Products
+      </FilterButton>
+
+      {filteredProducts.map((item) => (
+        <StyledCard key={item.id}>
+          <Typography variant="subtitle1">{item.title}</Typography>
+          <Typography variant="body2">${item.price}</Typography>
+          <Typography variant="body2">{item.description}</Typography>
+        </StyledCard>
+      ))}
+    </PageWrapper>
   );
 }
 
